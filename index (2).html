@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#020817">
+<title>S.H.A.I — Smart Helpful AI Assistant</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    background: #020817;
+    color: #b9dcff;
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+  }
+  .shai {
+    position: relative;
+    width: min(100%, 760px);
+    min-height: 100svh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(16px, 4vw, 32px);
+    background:
+      radial-gradient(ellipse at 50% 33%, rgba(0, 92, 255, .19), transparent 44%),
+      radial-gradient(ellipse at 50% 100%, rgba(0, 44, 140, .16), transparent 55%),
+      #020817;
+  }
+  .art {
+    width: 100%;
+    display: block;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px rgba(0, 102, 255, .12));
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .voice-controls {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: max(22px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    padding: 0 18px;
+  }
+  .mic {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: 1px solid rgba(91, 211, 255, .9);
+    color: #e8f8ff;
+    background: radial-gradient(circle at 35% 25%, #168cff, #03265f 78%);
+    box-shadow: 0 0 18px #006dff88, inset 0 0 14px #00bfff55;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .mic:active { transform: scale(.94); }
+  .mic:focus-visible { outline: 2px solid #8eeaff; outline-offset: 4px; }
+  .mic svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .status { min-height: 18px; color: #83b9f3; font-size: 12px; text-align: center; letter-spacing: .08em; }
+  .shai.listening .mic { animation: pulse 1s ease-in-out infinite; }
+  .shai.listening .status { color: #66e8ff; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 18px #006dff88, 0 0 0 0 #00cfff33; }
+    50% { box-shadow: 0 0 30px #008cff, 0 0 0 12px #00cfff00; }
+  }
+  @media (min-width: 620px) {
+    .shai { min-height: min(100svh, 1050px); }
+    .art { max-height: calc(100svh - 40px); }
+    .voice-controls { bottom: 18px; }
+  }
+  @media (max-height: 720px) {
+    .shai { justify-content: flex-start; padding-top: 8px; }
+    .art { max-height: calc(100svh - 100px); }
+    .voice-controls { bottom: 8px; }
+    .mic { width: 46px; height: 46px; }
+  }
+</style>
+</head>
+<body>
+<main class="shai" id="shai">
+  <img class="art" src="shai-orb.jpg" alt="S.H.A.I glowing electric-blue orbital AI sphere with Smart Helpful AI Assistant branding">
+  <div class="voice-controls">
+    <div class="status" id="status" aria-live="polite">S.H.A.I IS READY</div>
+    <button class="mic" id="mic" type="button" aria-label="Start voice command">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="9" y="2" width="6" height="13" rx="3"></rect>
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v4M9 22h6"></path>
+      </svg>
+    </button>
+  </div>
+</main>
+<script>
+const app = document.getElementById('shai');
+const button = document.getElementById('mic');
+const status = document.getElementById('status');
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-ZA';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    app.classList.add('listening');
+    status.textContent = 'LISTENING…';
+  };
+  recognition.onresult = (event) => {
+    const words = event.results[0][0].transcript;
+    app.classList.remove('listening');
+    status.textContent = 'YOU SAID: ' + words;
+    if ('speechSynthesis' in window) {
+      const reply = new SpeechSynthesisUtterance(
+        'I heard you say ' + words + '. Connect S.H.A.I to an AI service for intelligent answers.'
+      );
+      reply.lang = 'en-ZA';
+      speechSynthesis.speak(reply);
+    }
+  };
+  recognition.onerror = (event) => {
+    app.classList.remove('listening');
+    status.textContent = event.error === 'not-allowed'
+      ? 'PLEASE ALLOW MICROPHONE ACCESS'
+      : 'VOICE INPUT UNAVAILABLE — TAP TO TRY AGAIN';
+  };
+  recognition.onend = () => app.classList.remove('listening');
+  button.addEventListener('click', () => {
+    try { recognition.start(); }
+    catch (_) { status.textContent = 'PLEASE WAIT, THEN TRY AGAIN'; }
+  });
+} else {
+  button.addEventListener('click', () => {
+    status.textContent = 'USE A BROWSER THAT SUPPORTS VOICE INPUT';
+  });
+}
+</script>
+</body>
+</html>
